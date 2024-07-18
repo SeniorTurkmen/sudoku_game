@@ -36,6 +36,7 @@ class _SudokuAppState extends State<SudokuApp> {
   int selectedGroup = 0;
   List<SudokuMatix> puzzle = [];
   bool isNoteMode = false;
+  int? selectedValue;
   @override
   void initState() {
     init();
@@ -61,6 +62,8 @@ class _SudokuAppState extends State<SudokuApp> {
     selectedColumn = col;
     selectedRow = row;
     selectedGroup = (row ~/ 3) * 3 + col ~/ 3;
+    final selected = puzzle[selectedIndex].value;
+    selectedValue = selected == -1 ? null : selected;
     setState(() {});
   }
 
@@ -117,9 +120,7 @@ class _SudokuAppState extends State<SudokuApp> {
                 ),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      print('Solve');
-                    },
+                    onPressed: solve,
                     child: const Text('Solve'),
                   ),
                 ),
@@ -175,7 +176,7 @@ class _SudokuAppState extends State<SudokuApp> {
         padding: const EdgeInsets.all(8.0),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.black),
+            border: Border.all(color: Colors.black, width: 1),
           ),
           child: GridView.builder(
               shrinkWrap: true,
@@ -200,7 +201,9 @@ class _SudokuAppState extends State<SudokuApp> {
                                   selectedRow == row ||
                                   selectedGroup == (row ~/ 3) * 3 + col ~/ 3
                               ? Colors.blue.withOpacity(0.2)
-                              : Colors.white,
+                              : selectedValue == value.value
+                                  ? Colors.blueAccent.withOpacity(.3)
+                                  : Colors.white,
                       border: Border(
                         bottom: BorderSide(
                           width: row % 3 == 2 && row != 8 ? 3.0 : 1,
@@ -248,5 +251,12 @@ class _SudokuAppState extends State<SudokuApp> {
         ),
       ),
     );
+  }
+
+  void solve() {
+    puzzle = sudoku.solution.map((e) {
+      return SudokuMatix(value: e, isDefault: e != -1);
+    }).toList();
+    setState(() {});
   }
 }

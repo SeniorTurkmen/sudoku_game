@@ -1,16 +1,16 @@
 class SudokuMatix {
   final int value;
   final bool isDefault;
-  final List<int> noteNums;
+  List<int> noteNums = [];
 
-  SudokuMatix(
-      {required this.value, required this.isDefault, this.noteNums = const []});
+  SudokuMatix({required this.value, required this.isDefault});
 
   SudokuMatix copyWith({required int value}) {
     if (isDefault) {
       return this;
     }
-    return SudokuMatix(value: value, isDefault: isDefault, noteNums: noteNums);
+    var model = SudokuMatix(value: value, isDefault: isDefault);
+    return model..noteNums = noteNums;
   }
 
   @override
