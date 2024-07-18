@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sudoku_dart/sudoku_dart.dart';
 import 'package:sudoku_game/models/matrix_model.dart';
@@ -37,6 +39,9 @@ class _SudokuAppState extends State<SudokuApp> {
   List<SudokuMatix> puzzle = [];
   bool isNoteMode = false;
   int? selectedValue;
+  bool isGameFinish = false;
+  late Timer _timer;
+  int duration = 0;
   @override
   void initState() {
     init();
@@ -44,6 +49,11 @@ class _SudokuAppState extends State<SudokuApp> {
   }
 
   void init({Level level = Level.easy}) {
+    duration = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      duration += 1;
+      setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       sudoku = Sudoku.generate(level);
       puzzle = sudoku.puzzle.map((e) {
@@ -53,6 +63,7 @@ class _SudokuAppState extends State<SudokuApp> {
       selectedColumn = 0;
       selectedRow = 0;
       selectedGroup = 0;
+      isGameFinish = false;
       setState(() {});
     });
   }
@@ -63,8 +74,12 @@ class _SudokuAppState extends State<SudokuApp> {
     selectedRow = row;
     selectedGroup = (row ~/ 3) * 3 + col ~/ 3;
     final selected = puzzle[selectedIndex].value;
-    selectedValue = selected == -1 ? null : selected;
+    setSelectedValue(selected);
     setState(() {});
+  }
+
+  setSelectedValue(int value) {
+    selectedValue = value == -1 ? null : value;
   }
 
   void changeCellValue(int value) {
@@ -74,6 +89,12 @@ class _SudokuAppState extends State<SudokuApp> {
           : puzzle[selectedIndex].noteNums.add(value);
     } else {
       puzzle[selectedIndex] = puzzle[selectedIndex].copyWith(value: value);
+      setSelectedValue(value);
+      isGameFinish = !puzzle.any((e) => e.value == -1);
+      if (isGameFinish) {
+        print('time');
+        _timer.cancel();
+      }
     }
     setState(() {});
   }
@@ -83,12 +104,35 @@ class _SudokuAppState extends State<SudokuApp> {
     setState(() {});
   }
 
+  String get readableTime => '${duration ~/ 60}:${duration % 60}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: LayoutBuilder(builder: (context, boxConstraints) {
-        return Wrap(
-          children: [sudokuGrid(), actionGrid(boxConstraints, context)],
+        return Stack(
+          children: [
+            Wrap(
+              children: [sudokuGrid(), actionGrid(boxConstraints, context)],
+            ),
+            if (isGameFinish)
+              ColoredBox(
+                color: Colors.white70,
+                child: Center(
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                        'Congratilations! You finished the game\nDo you want to start a new game'),
+                    const SizedBox(
+                      height: 25,
+                    ),
+                    ElevatedButton(
+                        onPressed: init, child: const Text('Yeni Oyun'))
+                  ],
+                )),
+              )
+          ],
         );
       }),
     );
@@ -163,7 +207,8 @@ class _SudokuAppState extends State<SudokuApp> {
                     child: Text('${index + 1}'),
                   ),
                 );
-              })
+              }),
+          Text('Duration: $readableTime s')
         ],
       ),
     );
@@ -197,13 +242,20 @@ class _SudokuAppState extends State<SudokuApp> {
                     decoration: BoxDecoration(
                       color: selectedIndex == index
                           ? Colors.blue.withOpacity(0.5)
-                          : selectedColumn == col ||
-                                  selectedRow == row ||
-                                  selectedGroup == (row ~/ 3) * 3 + col ~/ 3
-                              ? Colors.blue.withOpacity(0.2)
+                          : (selectedColumn == col ||
+                                      selectedRow == row ||
+                                      selectedGroup ==
+                                          (row ~/ 3) * 3 + col ~/ 3) &&
+                                  selectedValue == value.value
+                              ? Colors.red.withOpacity(.3)
                               : selectedValue == value.value
                                   ? Colors.blueAccent.withOpacity(.3)
-                                  : Colors.white,
+                                  : selectedColumn == col ||
+                                          selectedRow == row ||
+                                          selectedGroup ==
+                                              (row ~/ 3) * 3 + col ~/ 3
+                                      ? Colors.blue.withOpacity(0.2)
+                                      : Colors.white,
                       border: Border(
                         bottom: BorderSide(
                           width: row % 3 == 2 && row != 8 ? 3.0 : 1,
