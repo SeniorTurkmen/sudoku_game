@@ -32,6 +32,7 @@ class SudokuApp extends StatefulWidget {
 
 class _SudokuAppState extends State<SudokuApp> {
   late Sudoku sudoku;
+  Map<int, int> sudokuNumberMap = {};
   int selectedIndex = 0;
   int selectedColumn = 0;
   int selectedRow = 0;
@@ -40,8 +41,9 @@ class _SudokuAppState extends State<SudokuApp> {
   bool isNoteMode = false;
   int? selectedValue;
   bool isGameFinish = false;
-  late Timer _timer;
+  Timer? _timer;
   int duration = 0;
+
   @override
   void initState() {
     init();
@@ -50,6 +52,8 @@ class _SudokuAppState extends State<SudokuApp> {
 
   void init({Level level = Level.easy}) {
     duration = 0;
+    sudokuNumberMap = {};
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       duration += 1;
       setState(() {});
@@ -58,6 +62,11 @@ class _SudokuAppState extends State<SudokuApp> {
       sudoku = Sudoku.generate(level);
       puzzle = sudoku.puzzle.map((e) {
         return SudokuMatix(value: e, isDefault: e != -1);
+      }).toList();
+      puzzle.map((e) {
+        if (e.value != -1) {
+          sudokuNumberMap[e.value] = (sudokuNumberMap[e.value] ?? 0) + 1;
+        }
       }).toList();
       selectedIndex = 0;
       selectedColumn = 0;
@@ -90,10 +99,11 @@ class _SudokuAppState extends State<SudokuApp> {
     } else {
       puzzle[selectedIndex] = puzzle[selectedIndex].copyWith(value: value);
       setSelectedValue(value);
+      sudokuNumberMap[value] = (sudokuNumberMap[value] ?? 0) + 1;
       isGameFinish = !puzzle.any((e) => e.value == -1);
       if (isGameFinish) {
         print('time');
-        _timer.cancel();
+        _timer?.cancel();
       }
     }
     setState(() {});
@@ -203,8 +213,20 @@ class _SudokuAppState extends State<SudokuApp> {
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
-                    onPressed: () => changeCellValue(index + 1),
-                    child: Text('${index + 1}'),
+                    onPressed: 9 - (sudokuNumberMap[index + 1] ?? 0) == 0
+                        ? null
+                        : () => changeCellValue(index + 1),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${index + 1}'),
+                        Text(
+                          '(${9 - (sudokuNumberMap[index + 1] ?? 0)})',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      ],
+                    ),
                   ),
                 );
               }),
